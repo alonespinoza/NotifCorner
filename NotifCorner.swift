@@ -166,7 +166,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
   /// The list changes size when notifications come and go; a short timer keeps it pinned.
   private var followTimer: Timer?
 
+  /// Opening the app again (Finder, Spotlight, Dock) while it runs shows the settings window.
+  func applicationShouldHandleReopen(_: NSApplication, hasVisibleWindows _: Bool) -> Bool {
+    showSettings()
+    return false
+  }
+
   func applicationDidFinishLaunching(_: Notification) {
+    // Only one copy may run. If another is already running, ask it to show its
+    // settings window and quit this one.
+    let me = ProcessInfo.processInfo.processIdentifier
+    if let other = NSRunningApplication.runningApplications(
+      withBundleIdentifier: Bundle.main.bundleIdentifier ?? ""
+    ).first(where: { $0.processIdentifier != me }) {
+      if let url = other.bundleURL { NSWorkspace.shared.open(url) }
+      exit(0)
+    }
+
     let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
     if AXIsProcessTrustedWithOptions(opts) {
       start()
